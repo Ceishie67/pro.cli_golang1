@@ -2,19 +2,23 @@ package cmd
 
 import (
 	"cligo/pkg"
+	"database/sql"
 	"fmt"
 )
 
-func Shopping(shoppingList pkg.ShoppingList) {
+var DB *sql.DB
 
+func Shopping() {
 	for {
 		fmt.Println("\nChoose an option:")
 		fmt.Println("1. Add item")
 		fmt.Println("2. Show items")
 		fmt.Println("3. Mark item")
-		fmt.Println("4. Delete item")
-		fmt.Println("5. Reorder item")
-		fmt.Println("6. Exit and Save")
+		fmt.Println("4. Modify quantity owner")
+		fmt.Println("5. Modify required quantity")
+		fmt.Println("6. Delete item")
+		fmt.Println("7. Reorder item")
+		fmt.Println("8. Exit and Save")
 
 		var choice int
 		fmt.Print("Enter your choice: ")
@@ -25,52 +29,84 @@ func Shopping(shoppingList pkg.ShoppingList) {
 			fmt.Print("Enter item to add: ")
 			var item string
 			fmt.Scanln(&item)
-			shoppingList.AddItem(item)
-			fmt.Println("Item added successfully!")
+			if err := pkg.AddItem(item); err != nil {
+				fmt.Println("Error adding item:", err)
+			} else {
+				fmt.Println("Item added successfully!")
+				pkg.ShowItems()
+			}
 
 		case 2:
 			fmt.Println("Current Shopping List:")
-			shoppingList.ShowItems()
+			pkg.ShowItems()
 
 		case 3:
-			fmt.Print("Enter the item number to mark/unmark: ")
-			var index int
-			fmt.Scanln(&index)
-			if index > 0 && index <= len(shoppingList.Items) {
-				shoppingList.MarkItemAndUnmarkItem(index - 1)
+			fmt.Print("Enter the item ID to mark/unmark: ")
+			var id int
+			fmt.Scanln(&id)
+			if err := pkg.MarkItem(id); err != nil {
+				fmt.Println("Error marking item:", err)
+			} else {
 				fmt.Println("Item marked successfully!")
-			} else {
-				fmt.Println("Invalid item number.")
+				pkg.ShowItems()
 			}
-
 		case 4:
-			fmt.Print("Enter the item number to delete: ")
-			var index int
-			fmt.Scanln(&index)
-			if index > 0 && index <= len(shoppingList.Items) {
-				shoppingList.RemoveItem(index - 1)
-				fmt.Println("Item deleted successfully!")
+			fmt.Print("Enter the item ID : ")
+			var id int
+			fmt.Scanln(&id)
+			fmt.Print("Enter the value : ")
+			var val int
+			fmt.Scanln(&val)
+			if err := pkg.ModifyOwned(id, val); err != nil {
+				fmt.Println("Error invalid value:", err)
 			} else {
-				fmt.Println("Invalid item number.")
+				fmt.Println("value added successfully!")
+				pkg.ShowItems()
 			}
-
 		case 5:
-			fmt.Print("Element to replace: ")
-			var index int
-			fmt.Scanln(&index)
-			fmt.Print("New place: ")
-			var index2 int
-			fmt.Scanln(&index2)
-			shoppingList.ReorderList(index-1, index2-1)
-			fmt.Println("list Reordered")
+			fmt.Print("Enter the item ID : ")
+			var id int
+			fmt.Scanln(&id)
+			fmt.Print("Enter the value : ")
+			var val int
+			fmt.Scanln(&val)
+			if err := pkg.ModifyRequired(id, val); err != nil {
+				fmt.Println("Error invalid value:", err)
+			} else {
+				fmt.Println("value added successfully!")
+				pkg.ShowItems()
+			}
 
 		case 6:
-			pkg.SaveToFile(&shoppingList)
-			fmt.Println("Shopping list saved. Exiting...")
-			return
+			fmt.Print("Enter the item ID to delete: ")
+			var id int
+			fmt.Scanln(&id)
+			if err := pkg.RemoveItem(id); err != nil {
+				fmt.Println("Error deleting item:", err)
+			} else {
+				fmt.Println("Item deleted successfully!")
+				pkg.ShowItems()
+			}
 
+		case 7:
+			fmt.Print("Element to replace (ID): ")
+			var fromIndex int
+			fmt.Scanln(&fromIndex)
+			fmt.Print("New place (ID): ")
+			var toIndex int
+			fmt.Scanln(&toIndex)
+			if err := pkg.ReorderList(fromIndex, toIndex); err != nil {
+				fmt.Println("Error reordering items:", err)
+			} else {
+				fmt.Println("List reordered successfully!")
+				pkg.ShowItems()
+			}
+
+		case 8:
+			fmt.Println("Exiting")
+			return
 		default:
-			fmt.Println("Invalid choice. Please try again.")
+			fmt.Println("Invalid choice, Please try again.")
 		}
 	}
 }

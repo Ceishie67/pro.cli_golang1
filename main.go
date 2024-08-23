@@ -2,12 +2,17 @@ package main
 
 import (
 	"cligo/cmd"
-	"cligo/pkg"
+	"cligo/storage"
+	"log"
 )
 
 func main() {
-	shoppingList := pkg.ShoppingList{}
+	var err error
+	storage.DB, err = storage.InitDB()
+	if err != nil {
+		log.Fatalf("Erreur d'initialisation de la base de données: %v", err)
+	}
 
-	pkg.LoadFromFile(&shoppingList)
-	cmd.Shopping(shoppingList)
+	cmd.DB = storage.DB
+	cmd.Shopping()
 }
