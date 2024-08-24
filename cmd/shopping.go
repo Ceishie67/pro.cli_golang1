@@ -33,6 +33,10 @@ func Shopping() {
 				fmt.Println("Error adding item:", err)
 			} else {
 				fmt.Println("Item added successfully!")
+				err := pkg.ReassignIDs()
+				if err != nil {
+					return
+				}
 				pkg.ShowItems()
 			}
 
@@ -51,10 +55,10 @@ func Shopping() {
 				pkg.ShowItems()
 			}
 		case 4:
-			fmt.Print("Enter the item ID : ")
+			fmt.Print("Enter the item ID to change owned quantity: ")
 			var id int
 			fmt.Scanln(&id)
-			fmt.Print("Enter the value : ")
+			fmt.Print("Enter owned quantity: ")
 			var val int
 			fmt.Scanln(&val)
 			if err := pkg.ModifyOwned(id, val); err != nil {
@@ -64,10 +68,10 @@ func Shopping() {
 				pkg.ShowItems()
 			}
 		case 5:
-			fmt.Print("Enter the item ID : ")
+			fmt.Print("Enter the item ID to change required quantity: ")
 			var id int
 			fmt.Scanln(&id)
-			fmt.Print("Enter the value : ")
+			fmt.Print("Enter required quantity: ")
 			var val int
 			fmt.Scanln(&val)
 			if err := pkg.ModifyRequired(id, val); err != nil {
@@ -85,6 +89,10 @@ func Shopping() {
 				fmt.Println("Error deleting item:", err)
 			} else {
 				fmt.Println("Item deleted successfully!")
+				err := pkg.ReassignIDs()
+				if err != nil {
+					return
+				}
 				pkg.ShowItems()
 			}
 
@@ -99,6 +107,10 @@ func Shopping() {
 				fmt.Println("Error reordering items:", err)
 			} else {
 				fmt.Println("List reordered successfully!")
+				err := pkg.ReassignIDs()
+				if err != nil {
+					return
+				}
 				pkg.ShowItems()
 			}
 

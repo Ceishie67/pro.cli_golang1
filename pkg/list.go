@@ -141,21 +141,31 @@ func ReorderList(fromIndex, toIndex int) error {
 		return fmt.Errorf("erreur lors du début de la transaction: %w", err)
 	}
 
-	updateOrderSQL := `
-        UPDATE shopping_list_items
-        SET id = CASE
-            WHEN id = ? THEN ?
-            WHEN id = ? THEN ?
-            ELSE id
-        END
-        WHERE id IN (?, ?)`
+	// Utiliser un ID temporaire qui ne sera jamais utilisé
+	tempID := -1
 
-	_, err = tx.Exec(updateOrderSQL, fromIndex, toIndex, toIndex, fromIndex, fromIndex, toIndex)
+	// Étape 1: Assigner l'ID temporaire à l'enregistrement de fromIndex
+	_, err = tx.Exec("UPDATE shopping_list_items SET id = ? WHERE id = ?", tempID, fromIndex)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("erreur lors de la mise à jour des index: %w", err)
+		return fmt.Errorf("erreur lors de la mise à jour de l'index temporaire: %w", err)
 	}
 
+	// Étape 2: Assigner l'ID de toIndex à fromIndex
+	_, err = tx.Exec("UPDATE shopping_list_items SET id = ? WHERE id = ?", fromIndex, toIndex)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la mise à jour de fromIndex: %w", err)
+	}
+
+	// Étape 3: Assigner l'ID temporaire (initialement fromIndex) à toIndex
+	_, err = tx.Exec("UPDATE shopping_list_items SET id = ? WHERE id = ?", toIndex, tempID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la mise à jour de toIndex: %w", err)
+	}
+
+	// Commit la transaction
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("erreur lors du commit de la transaction: %w", err)
 	}
@@ -191,8 +201,42 @@ func ModifyOwned(index, value int) error {
 
 	return nil
 }
+func ReassignIDs() error {
+	// Commencez une transaction pour que toutes les modifications soient atomiques
+	tx, err := storage.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("erreur lors de la création de la transaction: %w", err)
+	}
 
-// ajouter fonction pour :
-// corriger reorder
-// trouver moyen de reasigner les id quand elment liste suppr
-//correction lorsque ligne non trouver
+	// Sélectionnez les enregistrements actuels triés par ID (ou autre critère)
+	rows, err := tx.Query("SELECT id FROM shopping_list_items ORDER BY id")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la sélection des enregistrements: %w", err)
+	}
+	defer rows.Close()
+
+	var newID int = 1
+	for rows.Next() {
+		var oldID int
+		if err := rows.Scan(&oldID); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("erreur lors de la lecture des IDs: %w", err)
+		}
+
+		// Mettre à jour chaque enregistrement avec un nouvel ID consécutif
+		_, err := tx.Exec("UPDATE shopping_list_items SET id = ? WHERE id = ?", newID, oldID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("erreur lors de la mise à jour de l'ID de %d à %d: %w", oldID, newID, err)
+		}
+		newID++
+	}
+
+	// Commit la transaction pour appliquer toutes les modifications
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("erreur lors du commit de la transaction: %w", err)
+	}
+
+	return nil
+}
