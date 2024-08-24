@@ -2,6 +2,7 @@ package main
 
 import (
 	"cligo/cmd"
+	"cligo/pkg"
 	"cligo/storage"
 	"fmt"
 	"log"
@@ -19,6 +20,13 @@ func main() {
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/shopping", shoppingHandler)
+	http.HandleFunc("/mark_item", cmd.MarkItemWeb)
+	http.HandleFunc("/unmark_item", cmd.UnmarkItemWeb)
+	http.HandleFunc("/remove_item", cmd.RemoveItemWeb)
+	http.HandleFunc("/reorder_list", cmd.ReorderListWeb)
+	http.HandleFunc("/modify_required", cmd.ModifyRequiredWeb)
+	http.HandleFunc("/modify_owned", cmd.ModifyOwnedWeb)
+	//http.HandleFunc("/reassign_ids", cmd.ReassignIDsWeb)
 
 	fmt.Println("Serveur démarré sur le port 8080...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -36,7 +44,7 @@ func shoppingHandler(w http.ResponseWriter, r *http.Request) {
 		cmd.ShowItemsWeb(w)
 	case "POST":
 		item := r.FormValue("item")
-		if err := cmd.AddItem(item); err != nil {
+		if err := pkg.AddItem(item); err != nil {
 			http.Error(w, "Erreur lors de l'ajout de l'article", http.StatusInternalServerError)
 			return
 		}
